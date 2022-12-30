@@ -35,6 +35,11 @@ public class DriveCommand extends CommandBase {
         swerve.drive(speeds);
     }
 
+    @Override
+    public void end(boolean interrupted) {
+        swerve.drive(new ChassisSpeeds());
+    }
+
     private double calculateAxis(double axis, double deadband, double scalar) {
 
         double res;

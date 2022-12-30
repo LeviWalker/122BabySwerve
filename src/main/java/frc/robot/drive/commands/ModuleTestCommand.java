@@ -29,6 +29,11 @@ public class ModuleTestCommand extends CommandBase {
         test.setOpenLoop(speeds);
     }
 
+    @Override
+    public void end(boolean interrupted) {
+        test.setOpenLoop(new ChassisSpeeds());
+    }
+
     private double calculateAxis(double axis, double deadband, double scalar) {
 
         double res;

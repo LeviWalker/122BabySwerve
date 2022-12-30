@@ -11,6 +11,7 @@ import com.ctre.phoenix.sensors.CANCoder;
 import com.ctre.phoenix.sensors.CANCoderConfiguration;
 import com.ctre.phoenix.sensors.SensorInitializationStrategy;
 import com.ctre.phoenix.sensors.SensorTimeBase;
+import com.swervedrivespecialties.swervelib.ModuleConfiguration;
 import com.swervedrivespecialties.swervelib.SdsModuleConfigurations;
 
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -100,15 +101,17 @@ public class SwerveModule {
 
     private static final class Constants {
 
+        public static final ModuleConfiguration MODULE_CONFIGURATION = SdsModuleConfigurations.MK4I_L2;
+
         private static final double MAX_SPEED = frc.robot.Constants.MAX_TRANSLATIONAL_VELOCITY;
-        private static final double WHEEL_DIAMETER_METERS = SdsModuleConfigurations.MK4I_L1.getWheelDiameter();
+        private static final double WHEEL_DIAMETER_METERS = MODULE_CONFIGURATION.getWheelDiameter();
         private static final double WHEEL_CIRCUMFERENCE = WHEEL_DIAMETER_METERS * Math.PI;
-        private static final double DRIVE_GEAR_RATIO = SdsModuleConfigurations.MK4I_L1.getDriveReduction();
-        private static final double TURN_GEAR_RATIO = SdsModuleConfigurations.MK4I_L1.getSteerReduction();
+        private static final double DRIVE_GEAR_RATIO = MODULE_CONFIGURATION.getDriveReduction();
+        private static final double TURN_GEAR_RATIO = MODULE_CONFIGURATION.getSteerReduction();
         
-        private static final boolean DRIVE_MOTOR_INVERTED = SdsModuleConfigurations.MK4I_L1.isDriveInverted();
+        private static final boolean DRIVE_MOTOR_INVERTED = MODULE_CONFIGURATION.isDriveInverted();
         private static final NeutralMode DRIVE_MOTOR_NEUTRAL = NeutralMode.Coast;
-        private static final boolean TURN_MOTOR_INVERTED = SdsModuleConfigurations.MK4I_L1.isSteerInverted();
+        private static final boolean TURN_MOTOR_INVERTED = MODULE_CONFIGURATION.isSteerInverted();
         private static final NeutralMode TURN_MOTOR_NEUTRAL = NeutralMode.Brake;
         private static final boolean ENCODER_INVERTED = false;
 

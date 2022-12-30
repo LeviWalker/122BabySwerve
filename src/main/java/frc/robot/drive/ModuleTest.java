@@ -14,19 +14,35 @@ public class ModuleTest {
         this.kinematics = new SwerveDriveKinematics(position);
     }
 
+    public void stop() {
+        module.setDesiredState(new SwerveModuleState(), true);
+    }
+
+    public void goForward() {
+        setOpenLoop(new ChassisSpeeds(1, 0, 0));
+    }
+
+    public void goLeft() {
+        setOpenLoop(new ChassisSpeeds(0, 1, 0));
+    }
+
+    public void strafeForwardLeft() {
+        setOpenLoop(new ChassisSpeeds(Math.sqrt(2) / 2, Math.sqrt(2) / 2, 0));
+    }
+
     public void setOpenLoop(ChassisSpeeds speeds) {
-        SwerveModuleState[] states = kinematics.toSwerveModuleStates(speeds);
-
-        if (states.length != 1) throw new IllegalStateException("there should be only one state");
-
-        module.setDesiredState(states[0], true);
+        set(speeds, true);
     }
 
     public void setClosedLoop(ChassisSpeeds speeds) {
+        set(speeds, false);
+    }
+
+    private void set(ChassisSpeeds speeds, boolean isOpenLoop) {
         SwerveModuleState[] states = kinematics.toSwerveModuleStates(speeds);
 
         if (states.length != 1) throw new IllegalStateException("there should be only one state");
 
-        module.setDesiredState(states[0], false);
+        module.setDesiredState(states[0], isOpenLoop);
     }
 }

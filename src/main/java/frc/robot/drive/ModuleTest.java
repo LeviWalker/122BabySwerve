@@ -18,6 +18,18 @@ public class ModuleTest {
         module.setDesiredState(new SwerveModuleState(), true);
     }
 
+    public void driveSpinny(double output) {
+        module.testDriveSpinny(output);
+    }
+
+    public void turnSpinny(double output) {
+        module.testTurnSpinny(output);
+    }
+
+    public void spinnyStop() {
+        module.testStopSpinny();
+    }
+
     public void goForward() {
         setOpenLoop(new ChassisSpeeds(1, 0, 0));
     }

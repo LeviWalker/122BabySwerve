@@ -43,25 +43,25 @@ public class SwerveDrive extends SubsystemBase {
                 Constants.FRONT_LEFT_DRIVE_MOTOR_ID,
                 Constants.FRONT_LEFT_TURN_MOTOR_ID,
                 Constants.FRONT_LEFT_ENCODER_ID,
-                Rotation2d.fromDegrees(Constants.FRONT_LEFT_ANGLE_OFFSET));
+                new Rotation2d(Constants.FRONT_LEFT_ANGLE_OFFSET));
 
         this.frontRight = new SwerveModule(
                 Constants.FRONT_RIGHT_DRIVE_MOTOR_ID,
                 Constants.FRONT_RIGHT_TURN_MOTOR_ID,
                 Constants.FRONT_RIGHT_ENCODER_ID,
-                Rotation2d.fromDegrees(Constants.FRONT_RIGHT_ANGLE_OFFSET));
+                new Rotation2d(Constants.FRONT_RIGHT_ANGLE_OFFSET));
 
         this.backLeft = new SwerveModule(
                 Constants.BACK_LEFT_DRIVE_MOTOR_ID,
                 Constants.BACK_LEFT_TURN_MOTOR_ID,
                 Constants.BACK_LEFT_ENCODER_ID,
-                Rotation2d.fromDegrees(Constants.BACK_LEFT_ANGLE_OFFSET));
+                new Rotation2d(Constants.BACK_LEFT_ANGLE_OFFSET));
 
         this.backRight = new SwerveModule(
                 Constants.BACK_RIGHT_DRIVE_MOTOR_ID,
                 Constants.BACK_RIGHT_TURN_MOTOR_ID,
                 Constants.BACK_RIGHT_ENCODER_ID,
-                Rotation2d.fromDegrees(Constants.BACK_RIGHT_ANGLE_OFFSET));
+                new Rotation2d(Constants.BACK_RIGHT_ANGLE_OFFSET));
 
         this.modules = new SwerveModule[] { frontLeft, frontRight, backLeft, backRight };
     }

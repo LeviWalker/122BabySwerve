@@ -1,8 +1,8 @@
 package frc.robot.drive;
 
-
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.DemandType;
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.TalonFXConfiguration;
@@ -13,7 +13,6 @@ import com.ctre.phoenix.sensors.SensorInitializationStrategy;
 import com.ctre.phoenix.sensors.SensorTimeBase;
 import com.swervedrivespecialties.swervelib.ModuleConfiguration;
 import com.swervedrivespecialties.swervelib.SdsModuleConfigurations;
-
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -23,29 +22,26 @@ public class SwerveModule {
     private NKTalonFX drive;
     private NKTalonFX turn;
     private CANCoder turnEncoder;
-    private double angleOffset;
+    private Rotation2d angleOffset;
     private SimpleMotorFeedforward feedforward;
-    private double lastAngle;
+    private double lastAngleDelta;
 
     public SwerveModule(int driveMotorID, int turnMotorID, int encoderID, Rotation2d angleOffset) {
         initEncoder(encoderID);
         initDriveMotor(driveMotorID);
         initTurnMotor(turnMotorID);
         this.feedforward = new SimpleMotorFeedforward(Constants.DRIVE_KS, Constants.DRIVE_KV, Constants.DRIVE_KA);
-        this.angleOffset = angleOffset.getDegrees();
-        new Rotation2d(0);
+        this.angleOffset = angleOffset;
     }
 
     public SwerveModuleState getState() {
-        double velocity = Conversions.falconToMPS(drive.getSelectedSensorVelocity(), Constants.WHEEL_CIRCUMFERENCE,
-                Constants.DRIVE_GEAR_RATIO);
-        Rotation2d angle = Rotation2d
-                .fromDegrees(Conversions.falconToDegrees(turn.getSelectedSensorPosition(), Constants.TURN_GEAR_RATIO));
+        double velocity = getVelocityMPS();
+        Rotation2d angle = getAngleRotation2d();
         return new SwerveModuleState(velocity, angle);
     }
 
     public void setDesiredState(SwerveModuleState state, boolean isOpenLoop) {
-        state = optimizeAngle(state, getState().angle);
+        state = SwerveModuleState.optimize(state, getState().angle);
 
         if (isOpenLoop) {
             double percentOutput = state.speedMetersPerSecond / Constants.MAX_SPEED;
@@ -57,10 +53,29 @@ public class SwerveModule {
                     feedforward.calculate(state.speedMetersPerSecond));
         }
 
-        double angle = (Math.abs(state.speedMetersPerSecond) <= (Constants.MAX_SPEED * 0.01)) ? lastAngle
-                : state.angle.getDegrees();
-        turn.set(ControlMode.Position, Conversions.degreesToFalcon(angle, Constants.TURN_GEAR_RATIO));
-        lastAngle = angle;
+        double unboundAngle = turn.getSelectedSensorPosition();
+
+        double angleDelta = (Math.abs(state.speedMetersPerSecond) <= (Constants.MAX_SPEED * 0.01)) ? lastAngleDelta
+                : calculateAngleDelta(state.angle.getDegrees(), unboundAngle);
+
+        turn.set(ControlMode.Position, unboundAngle + angleDelta);
+        lastAngleDelta = angleDelta;
+    }
+
+    /**
+     * 
+     * @param targetAngle -180 to 180 degrees as per WPILib
+     * @param unboundedAngle unbounded angle given by
+     * @return
+     */
+    public double calculateAngleDelta(double targetAngle, double unboundedAngle) {
+        return boundPlusOrMinus180(targetAngle - boundPlusOrMinus180(unboundedAngle));
+    }
+
+    private double boundPlusOrMinus180(double unboundedAngle) {
+        double remainder  = unboundedAngle % 360;
+        double bounded0to360 = (remainder >= 0)? remainder : 360 + remainder;
+        return bounded0to360 - 180;
     }
 
     private void initDriveMotor(int driveMotorID) {
@@ -77,11 +92,16 @@ public class SwerveModule {
     private void initTurnMotor(int turnMotorID) {
         turn = new NKTalonFX(turnMotorID);
 
+        System.out.println("!!!!!!!!! initTurnMotor() got called !!!!!!!");
+
         turn.configFactoryDefault();
         turn.configAllSettings(Constants.TURN_MOTOR_CONFIGURATION);
         turn.setInverted(Constants.TURN_MOTOR_INVERTED);
         turn.setNeutralMode(Constants.TURN_MOTOR_NEUTRAL);
-        turn.setSelectedSensorPosition(Conversions.degreesToFalcon(getAngleDegrees(), Constants.TURN_GEAR_RATIO));
+        turn.configRemoteFeedbackFilter(turnEncoder, 0);
+        turn.configSelectedFeedbackSensor(FeedbackDevice.RemoteSensor0, 0, 0);
+        double absPos = turnEncoder.getAbsolutePosition() - angleOffset.getDegrees();
+        turn.setSelectedSensorPosition(Conversions.degreesToFalcon(absPos, Constants.TURN_GEAR_RATIO));
     }
 
     private void initEncoder(int encoderID) {
@@ -91,12 +111,25 @@ public class SwerveModule {
         turnEncoder.configAllSettings(Constants.ENCODER_CONFIGURATION);
     }
 
-    public Rotation2d getEncoder() {
-        return Rotation2d.fromDegrees(turnEncoder.getAbsolutePosition());
+    public Rotation2d getAngleRotation2d() {
+        return Rotation2d.fromDegrees(boundPlusOrMinus180(turnEncoder.getPosition() - angleOffset.getDegrees()));
     }
 
-    public double getAngleDegrees() {
-        return getEncoder().getDegrees() - angleOffset;
+    public double getVelocityMPS() {
+        return Conversions.falconToMPS(drive.getSelectedSensorVelocity(), Constants.WHEEL_CIRCUMFERENCE, Constants.DRIVE_GEAR_RATIO);
+    }
+
+    public void testDriveSpinny(double output) {
+        drive.set(output);
+    }
+
+    public void testTurnSpinny(double output) {
+        turn.set(output);
+    }
+
+    public void testStopSpinny() {
+        drive.set(0);
+        turn.set(0);
     }
 
     private static final class Constants {
@@ -106,13 +139,15 @@ public class SwerveModule {
         private static final double MAX_SPEED = frc.robot.Constants.MAX_TRANSLATIONAL_VELOCITY;
         private static final double WHEEL_DIAMETER_METERS = MODULE_CONFIGURATION.getWheelDiameter();
         private static final double WHEEL_CIRCUMFERENCE = WHEEL_DIAMETER_METERS * Math.PI;
-        private static final double DRIVE_GEAR_RATIO = MODULE_CONFIGURATION.getDriveReduction();
-        private static final double TURN_GEAR_RATIO = MODULE_CONFIGURATION.getSteerReduction();
-        
+        // ratio is motor rot / wheel rot
+        private static final double DRIVE_GEAR_RATIO = 1 / MODULE_CONFIGURATION.getDriveReduction();
+        private static final double TURN_GEAR_RATIO = 1 / MODULE_CONFIGURATION.getSteerReduction();
+
         private static final boolean DRIVE_MOTOR_INVERTED = MODULE_CONFIGURATION.isDriveInverted();
         private static final NeutralMode DRIVE_MOTOR_NEUTRAL = NeutralMode.Coast;
-        private static final boolean TURN_MOTOR_INVERTED = MODULE_CONFIGURATION.isSteerInverted();
-        private static final NeutralMode TURN_MOTOR_NEUTRAL = NeutralMode.Brake;
+        private static final boolean TURN_MOTOR_INVERTED = true;
+        private static final NeutralMode TURN_MOTOR_NEUTRAL = NeutralMode.Coast; // set back to brake to be amazing
+                                                                                 // later
         private static final boolean ENCODER_INVERTED = false;
 
         private static final TalonFXConfiguration DRIVE_MOTOR_CONFIGURATION = new TalonFXConfiguration() {
@@ -132,9 +167,11 @@ public class SwerveModule {
                 this.closedloopRamp = CLOSED_LOOP_RAMP;
 
             }
-        }; 
+        };
         private static final TalonFXConfiguration TURN_MOTOR_CONFIGURATION = new TalonFXConfiguration() {
             {
+                this.primaryPID.selectedFeedbackSensor = FeedbackDevice.RemoteSensor0;
+                this.primaryPID.selectedFeedbackCoefficient = 0.087890625;
                 this.slot0.kP = TURN_KP;
                 this.slot0.kI = TURN_KI;
                 this.slot0.kD = TURN_KD;
@@ -170,23 +207,24 @@ public class SwerveModule {
         private static final int DRIVE_PEAK_CURRENT_LIMIT = 60;
         private static final double DRIVE_PEAK_CURRENT_DURATION = 0.1;
 
-        private static final double DRIVE_KS = (0.667 / 12);
-        private static final double DRIVE_KV = (2.44 / 12);
-        private static final double DRIVE_KA = (0.27 / 12);
+        private static final double DRIVE_KS = 0.0; // (0.667 / 12);
+        private static final double DRIVE_KV = 0.0; // (2.44 / 12);
+        private static final double DRIVE_KA = 0.0; // (0.27 / 12);
 
-        private static final double DRIVE_KP = 0.10;
+        private static final double DRIVE_KP = 0.0; // 0.10;
         private static final double DRIVE_KI = 0.0;
         private static final double DRIVE_KD = 0.0;
         private static final double DRIVE_KF = 0.0;
 
-        private static final double TURN_KP = 0.6;
+        private static final double TURN_KP = 0.0; // 0.6;
         private static final double TURN_KI = 0.0;
-        private static final double TURN_KD = 12.0;
+        private static final double TURN_KD = 0.0; // 12.0;
         private static final double TURN_KF = 0.0;
     }
 
     public static final class Conversions {
         public static double falconToDegrees(double counts, double gearRatio) {
+            // ratio = motor/wheel
             return counts * (360.0 / (gearRatio * 2048.0));
         }
 
@@ -218,17 +256,6 @@ public class SwerveModule {
             double wheelVelocity = RPMToFalcon(wheelRPM, gearRatio);
             return wheelVelocity;
         }
-    }
-
-    private static final SwerveModuleState optimizeAngle(SwerveModuleState state, Rotation2d currentAngle) {
-        double targetAngle = placeInAppropriate0To360Scope(currentAngle.getDegrees(), state.angle.getDegrees());
-        double targetSpeed = state.speedMetersPerSecond;
-        double delta = targetAngle - currentAngle.getDegrees();
-        if (Math.abs(delta) > 90) {
-            targetSpeed = -targetSpeed;
-            targetAngle = delta > 90 ? (targetAngle -= 180) : (targetAngle += 180);
-        }
-        return new SwerveModuleState(targetSpeed, Rotation2d.fromDegrees(targetAngle));
     }
 
     private static double placeInAppropriate0To360Scope(double scopeReference, double newAngle) {

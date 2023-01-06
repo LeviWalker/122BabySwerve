@@ -1,5 +1,6 @@
 package frc.robot.drive.commands;
 
+import frc.robot.MathUtil;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj2.command.CommandBase;
@@ -20,9 +21,9 @@ public class DriveCommand extends CommandBase {
 
     @Override
     public void execute() {
-        double xSpeed = calculateAxis(driver.getY(), Constants.AXIS_DEADBAND, Constants.MAX_TRANSLATIONAL_VELOCITY);
-        double ySpeed = calculateAxis(driver.getX(), Constants.AXIS_DEADBAND, Constants.MAX_TRANSLATIONAL_VELOCITY);
-        double thetaSpeed = calculateAxis(driver.getZ(), Constants.AXIS_DEADBAND, Constants.MAX_ROTATIONAL_VELOCITY);
+        double xSpeed = MathUtil.calculateAxis(driver.getY(), Constants.AXIS_DEADBAND, Constants.MAX_TRANSLATIONAL_VELOCITY);
+        double ySpeed = MathUtil.calculateAxis(driver.getX(), Constants.AXIS_DEADBAND, Constants.MAX_TRANSLATIONAL_VELOCITY);
+        double thetaSpeed = MathUtil.calculateAxis(driver.getZ(), Constants.AXIS_DEADBAND, Constants.MAX_ROTATIONAL_VELOCITY);
 
         ChassisSpeeds speeds;
 
@@ -38,22 +39,5 @@ public class DriveCommand extends CommandBase {
     @Override
     public void end(boolean interrupted) {
         swerve.drive(new ChassisSpeeds());
-    }
-
-    private double calculateAxis(double axis, double deadband, double scalar) {
-
-        double res;
-
-        if (Math.abs(axis) > deadband) {
-            if (axis > 0.0) {
-                res = (axis - deadband) / (1.0 - deadband);
-            } else {
-                res = (axis + deadband) / (1.0 - deadband);
-            }
-        } else {
-            res = 0.0;
-        }
-
-        return res * scalar;
     }
 }

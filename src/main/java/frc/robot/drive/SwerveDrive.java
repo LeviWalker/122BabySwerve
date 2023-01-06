@@ -13,66 +13,78 @@ import frc.robot.Constants;
 
 public class SwerveDrive extends SubsystemBase {
 
-    private AHRS navx;
+        private AHRS navx;
 
-    private ChassisSpeeds speeds;
-    private SwerveDriveKinematics kinematics;
-    private SwerveDriveOdometry odometry;
+        private ChassisSpeeds speeds;
+        private SwerveDriveKinematics kinematics;
+        private SwerveDriveOdometry odometry;
 
-    private SwerveModule frontLeft, frontRight, backLeft, backRight;
-    private SwerveModule[] modules;
+        private SwerveModule frontLeft, frontRight, backLeft, backRight;
+        private SwerveModule[] modules;
 
-    public SwerveDrive(AHRS navx) {
-        this.navx = navx;
-        this.navx.calibrate();
+        public SwerveDrive(AHRS navx) {
+                this.navx = navx;
+                this.navx.calibrate();
 
-        this.speeds = new ChassisSpeeds();
-        this.kinematics = new SwerveDriveKinematics(
-                // Front left
-                new Translation2d(Constants.DRIVE_TRACKWIDTH_METERS / 2.0, Constants.DRIVE_WHEELBASE_METERS / 2.0),
-                // Front right
-                new Translation2d(Constants.DRIVE_TRACKWIDTH_METERS / 2.0, -Constants.DRIVE_WHEELBASE_METERS / 2.0),
-                // Back left
-                new Translation2d(-Constants.DRIVE_TRACKWIDTH_METERS / 2.0, Constants.DRIVE_WHEELBASE_METERS / 2.0),
-                // Back right
-                new Translation2d(-Constants.DRIVE_TRACKWIDTH_METERS / 2.0, -Constants.DRIVE_WHEELBASE_METERS / 2.0));
+                this.speeds = new ChassisSpeeds();
+                this.kinematics = new SwerveDriveKinematics(
+                                // Front left
+                                new Translation2d(Constants.DRIVE_TRACKWIDTH_METERS / 2.0,
+                                                Constants.DRIVE_WHEELBASE_METERS / 2.0),
+                                // Front right
+                                new Translation2d(Constants.DRIVE_TRACKWIDTH_METERS / 2.0,
+                                                -Constants.DRIVE_WHEELBASE_METERS / 2.0),
+                                // Back left
+                                new Translation2d(-Constants.DRIVE_TRACKWIDTH_METERS / 2.0,
+                                                Constants.DRIVE_WHEELBASE_METERS / 2.0),
+                                // Back right
+                                new Translation2d(-Constants.DRIVE_TRACKWIDTH_METERS / 2.0,
+                                                -Constants.DRIVE_WHEELBASE_METERS / 2.0));
 
-        this.odometry = new SwerveDriveOdometry(kinematics, this.getHeading());
+                this.frontLeft = new SwerveModule(
+                                Constants.FRONT_LEFT_DRIVE_MOTOR_ID,
+                                Constants.FRONT_LEFT_TURN_MOTOR_ID,
+                                Constants.FRONT_LEFT_ENCODER_ID,
+                                Constants.FRONT_LEFT_ANGLE_OFFSET);
 
-        this.frontLeft = new SwerveModule(
-                Constants.FRONT_LEFT_DRIVE_MOTOR_ID,
-                Constants.FRONT_LEFT_TURN_MOTOR_ID,
-                Constants.FRONT_LEFT_ENCODER_ID,
-                new Rotation2d(Constants.FRONT_LEFT_ANGLE_OFFSET));
+                this.frontRight = new SwerveModule(
+                                Constants.FRONT_RIGHT_DRIVE_MOTOR_ID,
+                                Constants.FRONT_RIGHT_TURN_MOTOR_ID,
+                                Constants.FRONT_RIGHT_ENCODER_ID,
+                                Constants.FRONT_RIGHT_ANGLE_OFFSET);
 
-        this.frontRight = new SwerveModule(
-                Constants.FRONT_RIGHT_DRIVE_MOTOR_ID,
-                Constants.FRONT_RIGHT_TURN_MOTOR_ID,
-                Constants.FRONT_RIGHT_ENCODER_ID,
-                new Rotation2d(Constants.FRONT_RIGHT_ANGLE_OFFSET));
+                this.backLeft = new SwerveModule(
+                                Constants.BACK_LEFT_DRIVE_MOTOR_ID,
+                                Constants.BACK_LEFT_TURN_MOTOR_ID,
+                                Constants.BACK_LEFT_ENCODER_ID,
+                                Constants.BACK_LEFT_ANGLE_OFFSET);
 
-        this.backLeft = new SwerveModule(
-                Constants.BACK_LEFT_DRIVE_MOTOR_ID,
-                Constants.BACK_LEFT_TURN_MOTOR_ID,
-                Constants.BACK_LEFT_ENCODER_ID,
-                new Rotation2d(Constants.BACK_LEFT_ANGLE_OFFSET));
+                this.backRight = new SwerveModule(
+                                Constants.BACK_RIGHT_DRIVE_MOTOR_ID,
+                                Constants.BACK_RIGHT_TURN_MOTOR_ID,
+                                Constants.BACK_RIGHT_ENCODER_ID,
+                                Constants.BACK_RIGHT_ANGLE_OFFSET);
 
-        this.backRight = new SwerveModule(
-                Constants.BACK_RIGHT_DRIVE_MOTOR_ID,
-                Constants.BACK_RIGHT_TURN_MOTOR_ID,
-                Constants.BACK_RIGHT_ENCODER_ID,
-                new Rotation2d(Constants.BACK_RIGHT_ANGLE_OFFSET));
+                this.modules = new SwerveModule[] { frontLeft, frontRight, backLeft, backRight };
+        }
 
-        this.modules = new SwerveModule[] { frontLeft, frontRight, backLeft, backRight };
-    }
+        public void drive(ChassisSpeeds speeds, boolean isOpenLoop) {
+                this.speeds = speeds;
+                SwerveModuleState[] states = kinematics.toSwerveModuleStates(speeds);
 
-    public void drive(ChassisSpeeds speeds) {
-        this.speeds = speeds;
-        SwerveModuleState[] states = kinematics.toSwerveModuleStates(speeds);
-    }
+                for (int i = 0; i < 4; i++) {
+                        modules[i].setDesiredState(states[i], isOpenLoop);
+                }
+        }
 
-    public Rotation2d getHeading() {
-        return null;
-    }
+        public Rotation2d getHeading() {
+                return null;
+        }
+
+        public void updateSmartDash() {
+                for (SwerveModule module : modules) {
+                        module.updateSmartDash();
+                }
+        }
 
 }

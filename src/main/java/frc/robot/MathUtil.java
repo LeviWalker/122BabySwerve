@@ -2,7 +2,6 @@ package frc.robot;
 
 public class MathUtil {
     public static double calculateAxis(double axis, double deadband, double scalar) {
-
         double res;
 
         if (Math.abs(axis) > deadband) {

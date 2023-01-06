@@ -16,17 +16,25 @@ import com.swervedrivespecialties.swervelib.SdsModuleConfigurations;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.lib.control.motors.NKTalonFX;
+import frc.robot.Robot;
 
 public class SwerveModule {
     private NKTalonFX drive;
     private NKTalonFX turn;
     private CANCoder turnEncoder;
-    private Rotation2d angleOffset;
+    private Rotation2d angleOffset = new Rotation2d();
     private SimpleMotorFeedforward feedforward;
     private double lastAngleDelta;
 
+    private int id;
+
+    private double desiredAngle = 0;
+
     public SwerveModule(int driveMotorID, int turnMotorID, int encoderID, Rotation2d angleOffset) {
+        id = (driveMotorID / 10) - 1;
         initEncoder(encoderID);
         initDriveMotor(driveMotorID);
         initTurnMotor(turnMotorID);
@@ -34,32 +42,38 @@ public class SwerveModule {
         this.angleOffset = angleOffset;
     }
 
-    public SwerveModuleState getState() {
+    public SwerveModuleState getCurrentState() {
         double velocity = getVelocityMPS();
         Rotation2d angle = getAngleRotation2d();
         return new SwerveModuleState(velocity, angle);
     }
 
-    public void setDesiredState(SwerveModuleState state, boolean isOpenLoop) {
-        state = SwerveModuleState.optimize(state, getState().angle);
+    public void setDesiredState(SwerveModuleState desiredState, boolean isOpenLoop) {
+        // desiredState = SwerveModuleState.optimize(desiredState, getCurrentState().angle);
 
-        if (isOpenLoop) {
-            double percentOutput = state.speedMetersPerSecond / Constants.MAX_SPEED;
-            drive.set(ControlMode.PercentOutput, percentOutput);
-        } else {
-            double velocity = Conversions.MPSToFalcon(state.speedMetersPerSecond, Constants.WHEEL_CIRCUMFERENCE,
-                    Constants.DRIVE_GEAR_RATIO);
-            drive.set(ControlMode.Velocity, velocity, DemandType.ArbitraryFeedForward,
-                    feedforward.calculate(state.speedMetersPerSecond));
+
+        double angleDelta = getCurrentState().angle.minus(desiredState.angle).getDegrees();
+
+        if (Math.abs(angleDelta) > 90) {
+            angleDelta -= 180 * Math.signum(angleDelta);
+            desiredState.speedMetersPerSecond *= -1;
         }
 
-        double unboundAngle = turn.getSelectedSensorPosition();
+        if (isOpenLoop) {
+            double percentOutput = desiredState.speedMetersPerSecond / Constants.MAX_SPEED;
+            drive.set(ControlMode.PercentOutput, percentOutput);
+        } else {
+            double velocity = Conversions.MPSToFalcon(desiredState.speedMetersPerSecond, Constants.WHEEL_CIRCUMFERENCE,
+                    Constants.DRIVE_GEAR_RATIO);
+            drive.set(ControlMode.Velocity, velocity, DemandType.ArbitraryFeedForward,
+                    feedforward.calculate(desiredState.speedMetersPerSecond));
+        }
 
-        double angleDelta = (Math.abs(state.speedMetersPerSecond) <= (Constants.MAX_SPEED * 0.01)) ? lastAngleDelta
-                : calculateAngleDelta(state.angle.getDegrees(), unboundAngle);
+        // if (Math.abs(desiredState.speedMetersPerSecond) > (Constants.MAX_SPEED * 0.01)) {
+            turn.set(ControlMode.Position, turn.getSelectedSensorPosition() - angleDelta);
+        // }
 
-        turn.set(ControlMode.Position, unboundAngle + angleDelta);
-        lastAngleDelta = angleDelta;
+        // lastAngleDelta = angleDelta;
     }
 
     /**
@@ -91,17 +105,15 @@ public class SwerveModule {
 
     private void initTurnMotor(int turnMotorID) {
         turn = new NKTalonFX(turnMotorID);
-
-        System.out.println("!!!!!!!!! initTurnMotor() got called !!!!!!!");
-
         turn.configFactoryDefault();
         turn.configAllSettings(Constants.TURN_MOTOR_CONFIGURATION);
         turn.setInverted(Constants.TURN_MOTOR_INVERTED);
+        turn.setSensorPhase(true);
         turn.setNeutralMode(Constants.TURN_MOTOR_NEUTRAL);
         turn.configRemoteFeedbackFilter(turnEncoder, 0);
         turn.configSelectedFeedbackSensor(FeedbackDevice.RemoteSensor0, 0, 0);
-        double absPos = turnEncoder.getAbsolutePosition() - angleOffset.getDegrees();
-        turn.setSelectedSensorPosition(Conversions.degreesToFalcon(absPos, Constants.TURN_GEAR_RATIO));
+        // double absPos = turnEncoder.getAbsolutePosition() - angleOffset.getDegrees();
+        // turn.setSelectedSensorPosition(Conversions.degreesToFalcon(absPos, Constants.TURN_GEAR_RATIO));
     }
 
     private void initEncoder(int encoderID) {
@@ -109,6 +121,24 @@ public class SwerveModule {
 
         turnEncoder.configFactoryDefault();
         turnEncoder.configAllSettings(Constants.ENCODER_CONFIGURATION);
+    }
+
+    public void updateSmartDash() {
+        double dA = SmartDashboard.getNumber(id + " desired angle", desiredAngle);
+
+        if (desiredAngle != dA) {
+            desiredAngle = dA;
+        }
+
+        SmartDashboard.putNumber(id + " Module Encoder Raw Position", turnEncoder.getPosition());
+        SmartDashboard.putNumber(id + " Encoder Raw Absolute Position", turnEncoder.getAbsolutePosition());
+        SmartDashboard.putNumber(id + " Motor Selected Sensor Position", turn.getSelectedSensorPosition());
+        SmartDashboard.putNumber(id + " Module Angle", getAngleRotation2d().getDegrees());
+        double[] positions = { turnEncoder.getPosition(), turn.getSelectedSensorPosition() };
+        SmartDashboard.putNumberArray("Positions (should be equal)", positions);
+
+        SmartDashboard.putNumber(id + " desired angle", desiredAngle);
+        SmartDashboard.putNumber(id + " angle delta", getCurrentState().angle.minus(Rotation2d.fromDegrees(desiredAngle)).getDegrees());
     }
 
     public Rotation2d getAngleRotation2d() {
@@ -216,9 +246,9 @@ public class SwerveModule {
         private static final double DRIVE_KD = 0.0;
         private static final double DRIVE_KF = 0.0;
 
-        private static final double TURN_KP = 0.0; // 0.6;
-        private static final double TURN_KI = 0.0;
-        private static final double TURN_KD = 0.0; // 12.0;
+        private static final double TURN_KP = 8; // 0.6;
+        private static final double TURN_KI = 0;
+        private static final double TURN_KD = 0; // 12.0;
         private static final double TURN_KF = 0.0;
     }
 

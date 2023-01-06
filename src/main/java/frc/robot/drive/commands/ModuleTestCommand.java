@@ -2,6 +2,7 @@ package frc.robot.drive.commands;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.Constants;
 import frc.robot.MathUtil;
@@ -15,13 +16,17 @@ public class ModuleTestCommand extends CommandBase {
     public ModuleTestCommand(Joystick driver, ModuleTest test) {
         this.driver = driver;
         this.test = test;
+        addRequirements(test);
     }
 
     @Override
     public void execute() {
-        double xSpeed = MathUtil.calculateAxis(driver.getY(), Constants.AXIS_DEADBAND, Constants.MAX_TRANSLATIONAL_VELOCITY);
+        double xSpeed = -MathUtil.calculateAxis(driver.getY(), Constants.AXIS_DEADBAND, Constants.MAX_TRANSLATIONAL_VELOCITY);
         double ySpeed = MathUtil.calculateAxis(driver.getX(), Constants.AXIS_DEADBAND, Constants.MAX_TRANSLATIONAL_VELOCITY);
-        double thetaSpeed = MathUtil.calculateAxis(driver.getZ(), Constants.AXIS_DEADBAND, Constants.MAX_ROTATIONAL_VELOCITY);
+        double thetaSpeed = 0; // = MathUtil.calculateAxis(driver.getZ(), Constants.AXIS_DEADBAND, Constants.MAX_ROTATIONAL_VELOCITY);
+
+        SmartDashboard.putNumber("x", xSpeed);
+        SmartDashboard.putNumber("y", ySpeed);
 
         ChassisSpeeds speeds = new ChassisSpeeds(xSpeed, ySpeed, thetaSpeed);
 

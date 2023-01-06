@@ -1,7 +1,6 @@
 package frc.robot.drive.commands;
 
 import frc.robot.drive.SwerveModule;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 
 public class DriveSpinnyTest extends CommandBase {

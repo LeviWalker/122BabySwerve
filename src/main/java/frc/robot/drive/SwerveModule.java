@@ -19,6 +19,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.lib.control.motors.NKTalonFX;
+import frc.robot.Constants;
 import frc.robot.Robot;
 
 public class SwerveModule {
@@ -49,8 +50,6 @@ public class SwerveModule {
     }
 
     public void setDesiredState(SwerveModuleState desiredState, boolean isOpenLoop) {
-        // desiredState = SwerveModuleState.optimize(desiredState, getCurrentState().angle);
-
 
         double angleDelta = getCurrentState().angle.minus(desiredState.angle).getDegrees();
 
@@ -69,9 +68,9 @@ public class SwerveModule {
                     feedforward.calculate(desiredState.speedMetersPerSecond));
         }
 
-        // if (Math.abs(desiredState.speedMetersPerSecond) > (Constants.MAX_SPEED * 0.01)) {
+        if (Math.abs(desiredState.speedMetersPerSecond) > (Constants.MAX_SPEED * 0.02)) {
             turn.set(ControlMode.Position, turn.getSelectedSensorPosition() - angleDelta);
-        // }
+        }
 
         // lastAngleDelta = angleDelta;
     }
@@ -195,6 +194,7 @@ public class SwerveModule {
                 this.initializationStrategy = SensorInitializationStrategy.BootToZero;
                 this.openloopRamp = OPEN_LOOP_RAMP;
                 this.closedloopRamp = CLOSED_LOOP_RAMP;
+                this.voltageCompSaturation = 12;
 
             }
         };
@@ -213,6 +213,7 @@ public class SwerveModule {
                         TURN_PEAK_CURRENT_DURATION);
 
                 this.initializationStrategy = SensorInitializationStrategy.BootToZero;
+                this.voltageCompSaturation = 12;
             }
         };
         private static final CANCoderConfiguration ENCODER_CONFIGURATION = new CANCoderConfiguration() {
@@ -246,7 +247,7 @@ public class SwerveModule {
         private static final double DRIVE_KD = 0.0;
         private static final double DRIVE_KF = 0.0;
 
-        private static final double TURN_KP = 8; // 0.6;
+        private static final double TURN_KP = 2; // 0.6;
         private static final double TURN_KI = 0;
         private static final double TURN_KD = 0; // 12.0;
         private static final double TURN_KF = 0.0;

@@ -8,6 +8,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
@@ -78,13 +79,18 @@ public class SwerveDrive extends SubsystemBase {
         }
 
         public Rotation2d getHeading() {
-                return null;
+                return Rotation2d.fromDegrees(-navx.getAngle());
+        }
+
+        public void ResetHeading() {
+                navx.zeroYaw();
         }
 
         public void updateSmartDash() {
                 for (SwerveModule module : modules) {
                         module.updateSmartDash();
                 }
+                SmartDashboard.putNumber("heading", navx.getAngle());
         }
 
 }

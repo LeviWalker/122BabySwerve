@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.drive.ModuleTest;
 import frc.robot.drive.SwerveDrive;
@@ -51,7 +52,7 @@ public class RobotContainer {
     }
 
     private void configureButtonBindings() {
-        
+        new JoystickButton(driver, 1).whenPressed(new InstantCommand(swerve::ResetHeading));
     }
 
     public void periodic() {

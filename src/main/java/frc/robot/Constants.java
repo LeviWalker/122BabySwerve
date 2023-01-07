@@ -26,7 +26,7 @@ public class Constants {
             * SDS_MODULE_DATA.getDriveReduction();
     public static final double MAX_ROTATIONAL_VELOCITY = MAX_TRANSLATIONAL_VELOCITY
             / Math.hypot(DRIVE_TRACKWIDTH_METERS / 2, DRIVE_WHEELBASE_METERS / 2);
-    public static final boolean FIELD_RELATIVE = false;
+    public static final boolean FIELD_RELATIVE = true;
 
     public static final int FRONT_LEFT_DRIVE_MOTOR_ID = 10;
     public static final int FRONT_LEFT_TURN_MOTOR_ID = 11;

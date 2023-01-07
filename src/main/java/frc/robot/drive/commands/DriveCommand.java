@@ -22,9 +22,9 @@ public class DriveCommand extends CommandBase {
 
     @Override
     public void execute() {
-        double xSpeed = -MathUtil.calculateAxis(driver.getY(), Constants.AXIS_DEADBAND, Constants.MAX_TRANSLATIONAL_VELOCITY);
-        double ySpeed = MathUtil.calculateAxis(driver.getX(), Constants.AXIS_DEADBAND, Constants.MAX_TRANSLATIONAL_VELOCITY);
-        double thetaSpeed = MathUtil.calculateAxis(driver.getZ(), Constants.AXIS_DEADBAND, Constants.MAX_ROTATIONAL_VELOCITY);
+        double xSpeed = -MathUtil.calculateAxis(driver.getY(), Constants.AXIS_DEADBAND, 0.20 * Constants.MAX_TRANSLATIONAL_VELOCITY);
+        double ySpeed = MathUtil.calculateAxis(driver.getX(), Constants.AXIS_DEADBAND, 0.20 * Constants.MAX_TRANSLATIONAL_VELOCITY);
+        double thetaSpeed = MathUtil.calculateAxis(driver.getZ(), Constants.AXIS_DEADBAND, 0.20 * Constants.MAX_ROTATIONAL_VELOCITY);
 
         SmartDashboard.putNumber("z", driver.getZ()); 
         SmartDashboard.putNumber("theta", thetaSpeed);

@@ -39,7 +39,7 @@ public class DriveCommand extends CommandBase {
         }
 
         System.out.println("DriveCommand(" + xSpeed + ", " + ySpeed + ", " + thetaSpeed + ")");
-        swerve.drive(speeds, true);
+        swerve.drive(speeds, false);
     }
 
     @Override

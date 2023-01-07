@@ -1,15 +1,8 @@
 package frc.robot;
 
-import com.fasterxml.jackson.annotation.JsonCreator.Mode;
-import com.fasterxml.jackson.databind.deser.std.FromStringDeserializer;
 import com.kauailabs.navx.frc.AHRS;
 
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -17,11 +10,8 @@ import frc.robot.drive.ModuleTest;
 import frc.robot.drive.SwerveDrive;
 import frc.robot.drive.SwerveModule;
 import frc.robot.drive.commands.DriveCommand;
-import frc.robot.drive.commands.DriveSpinnyTest;
-import frc.robot.drive.commands.DriveTurnSpinnyTest;
-import frc.robot.drive.commands.ModuleTestCommand;
-import frc.robot.drive.commands.TestModuleAngleCommand;
-import frc.robot.drive.commands.TurnSpinnyTest;
+import frc.robot.drive.commands.VelocityTest;
+import frc.robot.drive.commands.VoltageTest;
 
 import static frc.robot.Constants.*;
 
@@ -32,15 +22,18 @@ public class RobotContainer {
     private AHRS navx;
     private SwerveDrive swerve;
 
+    private SwerveModule frontLeft;
+    private ModuleTest test;
+
     public RobotContainer() {
         driver = new Joystick(DRIVER_PORT);
 
         navx = new AHRS(NAVX_PORT);
 
-        // backLeft = new SwerveModule(
-        //     Constants.BACK_LEFT_DRIVE_MOTOR_ID, BACK_LEFT_TURN_MOTOR_ID, BACK_LEFT_ENCODER_ID, BACK_LEFT_ANGLE_OFFSET);
+        // frontLeft = new SwerveModule(FRONT_LEFT_DRIVE_MOTOR_ID, FRONT_LEFT_TURN_MOTOR_ID, FRONT_LEFT_ENCODER_ID, FRONT_LEFT_ANGLE_OFFSET);
 
-        // moduleTest = new ModuleTest(backLeft, FRONT_RIGHT_POSITION);
+        // test = new ModuleTest(frontLeft, FRONT_LEFT_POSITION);
+
         swerve = new SwerveDrive(navx);
 
         configureDefaultCommands();
@@ -53,10 +46,15 @@ public class RobotContainer {
 
     private void configureButtonBindings() {
         new JoystickButton(driver, 1).whenPressed(new InstantCommand(swerve::ResetHeading));
+
+        // new JoystickButton(driver, 2).whileHeld(new VelocityTest(test, 0.5));
+        // new JoystickButton(driver, 3).whileHeld(new VoltageTest(test, 1));
+        // SmartDashboard.putNumber("volts", 0);
     }
 
     public void periodic() {
         swerve.updateSmartDash();
+        // SmartDashboard.putNumber("Module Velocity", test.getModuleVelocityMPS());
     }
 
     public void testInit() {

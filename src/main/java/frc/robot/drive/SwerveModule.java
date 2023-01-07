@@ -11,6 +11,7 @@ import com.ctre.phoenix.sensors.CANCoder;
 import com.ctre.phoenix.sensors.CANCoderConfiguration;
 import com.ctre.phoenix.sensors.SensorInitializationStrategy;
 import com.ctre.phoenix.sensors.SensorTimeBase;
+import com.ctre.phoenix.sensors.SensorVelocityMeasPeriod;
 import com.swervedrivespecialties.swervelib.ModuleConfiguration;
 import com.swervedrivespecialties.swervelib.SdsModuleConfigurations;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -50,6 +51,7 @@ public class SwerveModule {
     }
 
     public void setDesiredState(SwerveModuleState desiredState, boolean isOpenLoop) {
+        SmartDashboard.putString("State: ", "not velocity");
 
         double angleDelta = getCurrentState().angle.minus(desiredState.angle).getDegrees();
 
@@ -62,10 +64,17 @@ public class SwerveModule {
             double percentOutput = desiredState.speedMetersPerSecond / Constants.MAX_SPEED;
             drive.set(ControlMode.PercentOutput, percentOutput);
         } else {
-            double velocity = Conversions.MPSToFalcon(desiredState.speedMetersPerSecond, Constants.WHEEL_CIRCUMFERENCE,
-                    Constants.DRIVE_GEAR_RATIO);
-            drive.set(ControlMode.Velocity, velocity, DemandType.ArbitraryFeedForward,
-                    feedforward.calculate(desiredState.speedMetersPerSecond));
+            // SmartDashboard.putString("State: ", "velocity");
+            // double velocity = Conversions.MPSToFalcon(desiredState.speedMetersPerSecond, Constants.WHEEL_CIRCUMFERENCE,
+            //         Constants.DRIVE_GEAR_RATIO);
+            // SmartDashboard.putNumber("Target velocity", desiredState.speedMetersPerSecond);
+
+            // double l = feedforward.calculate(desiredState.speedMetersPerSecond) / 12;
+            // SmartDashboard.putNumber("L: ", l);
+            // drive.set(ControlMode.Velocity, velocity, DemandType.ArbitraryFeedForward,
+            //         l); // this is important
+
+            drive.setVoltage(feedforward.calculate(desiredState.speedMetersPerSecond) + Constants.DRIVE_KP * (desiredState.speedMetersPerSecond - getVelocityMPS()));
         }
 
         if (Math.abs(desiredState.speedMetersPerSecond) > (Constants.MAX_SPEED * 0.02)) {
@@ -161,6 +170,10 @@ public class SwerveModule {
         turn.set(0);
     }
 
+    public void setDriveVoltage(double voltage) {
+        drive.setVoltage(voltage);
+    }
+
     private static final class Constants {
 
         public static final ModuleConfiguration MODULE_CONFIGURATION = SdsModuleConfigurations.MK4I_L2;
@@ -195,6 +208,7 @@ public class SwerveModule {
                 this.openloopRamp = OPEN_LOOP_RAMP;
                 this.closedloopRamp = CLOSED_LOOP_RAMP;
                 this.voltageCompSaturation = 12;
+                this.velocityMeasurementPeriod = SensorVelocityMeasPeriod.Period_10Ms;
 
             }
         };
@@ -238,18 +252,18 @@ public class SwerveModule {
         private static final int DRIVE_PEAK_CURRENT_LIMIT = 60;
         private static final double DRIVE_PEAK_CURRENT_DURATION = 0.1;
 
-        private static final double DRIVE_KS = 0.0; // (0.667 / 12);
-        private static final double DRIVE_KV = 0.0; // (2.44 / 12);
-        private static final double DRIVE_KA = 0.0; // (0.27 / 12);
+        private static final double DRIVE_KS = 0.519;
+        private static final double DRIVE_KV = 2.306; 
+        private static final double DRIVE_KA = 0.0;
 
-        private static final double DRIVE_KP = 0.0; // 0.10;
+        private static final double DRIVE_KP = 1.5;
         private static final double DRIVE_KI = 0.0;
         private static final double DRIVE_KD = 0.0;
-        private static final double DRIVE_KF = 0.0;
+        private static final double DRIVE_KF = 0; // 0.25 / 0.54 * 0.1;
 
-        private static final double TURN_KP = 2; // 0.6;
+        private static final double TURN_KP = 2;
         private static final double TURN_KI = 0;
-        private static final double TURN_KD = 0; // 12.0;
+        private static final double TURN_KD = 0;
         private static final double TURN_KF = 0.0;
     }
 
@@ -287,30 +301,5 @@ public class SwerveModule {
             double wheelVelocity = RPMToFalcon(wheelRPM, gearRatio);
             return wheelVelocity;
         }
-    }
-
-    private static double placeInAppropriate0To360Scope(double scopeReference, double newAngle) {
-        double lowerBound;
-        double upperBound;
-        double lowerOffset = scopeReference % 360;
-        if (lowerOffset >= 0) {
-            lowerBound = scopeReference - lowerOffset;
-            upperBound = scopeReference + (360 - lowerOffset);
-        } else {
-            upperBound = scopeReference - lowerOffset;
-            lowerBound = scopeReference - (360 + lowerOffset);
-        }
-        while (newAngle < lowerBound) {
-            newAngle += 360;
-        }
-        while (newAngle > upperBound) {
-            newAngle -= 360;
-        }
-        if (newAngle - scopeReference > 180) {
-            newAngle -= 360;
-        } else if (newAngle - scopeReference < -180) {
-            newAngle += 360;
-        }
-        return newAngle;
     }
 }

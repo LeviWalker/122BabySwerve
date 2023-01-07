@@ -1,5 +1,7 @@
 package frc.robot.drive;
 
+import javax.lang.model.element.ModuleElement;
+
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -55,6 +57,18 @@ public class ModuleTest extends SubsystemBase {
 
     public void setClosedLoop(ChassisSpeeds speeds) {
         set(speeds, false);
+    }
+
+    public void setVolts(double voltage) {
+        module.setDriveVoltage(voltage);
+    }
+
+    public double getModuleVelocityMPS() {
+        return module.getVelocityMPS();
+    }
+
+    public void setMPS(double mps) {
+        module.setDesiredState(new SwerveModuleState(mps, module.getAngleRotation2d()), false);
     }
 
     private void set(ChassisSpeeds speeds, boolean isOpenLoop) {
